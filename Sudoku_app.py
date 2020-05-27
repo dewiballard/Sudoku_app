@@ -13,6 +13,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.clock import Clock
+import re
 import os
 
 class PuzzleSelector(GridLayout):
@@ -26,7 +27,7 @@ class PuzzleSelector(GridLayout):
         self.add_widget(self.easy)
         self.medium = Button(text='Medium (3x3)')
         self.add_widget(self.medium)
-        self.medium.bind(on_press=self.ThreeThree_button)
+        self.medium.bind(on_press=self.Grid_button)
         self.hard1 = Button(text='Hard1 (3x4)')
         self.add_widget(self.hard1)
         self.hard2 = Button(text='Hard2 (4x3)')
@@ -34,7 +35,7 @@ class PuzzleSelector(GridLayout):
         self.extreme = Button(text='Extreme (4x4)')
         self.add_widget(self.extreme)
     
-    def ThreeThree_button(self, instance):
+    def Grid_button(self, instance):
         info = f'Attempting to configure your grid...'
         PuzzleApp.info_page.update_info(info)
         PuzzleApp.screen_manager.current = 'Info'
@@ -60,42 +61,54 @@ class InfoPage(GridLayout):
 class GridPage(GridLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.cols = 9                                           # This needs to be udpated for each grid
+        self.cols = 9                                           # This value to be updated for each grid
         self.add_widget(Label(text='Please input numbers'))     # Need to make this its own row at the top (i.e. 9 cell wide)
         
-        self.first_cell = TextInput(multiline=False)            # Need to automate these so we have GridPage(n.of.cells), and it makes that number of cells
+        self.first_cell = FloatInput(multiline=False)            # Need to automate these so we have GridPage(n.of.cells), and it makes that number of cells
         self.add_widget(self.first_cell)
 
-        self.second_cell = TextInput(multiline=False)           # when these complete, if empty, assume zero for my sudoku code, else take value
+        self.second_cell = FloatInput(multiline=False)           # Need to make sure user can only put one number in
         self.add_widget(self.second_cell)
 
-        self.third_cell = TextInput(multiline=False)
+        self.third_cell = FloatInput(multiline=False)            # when these complete, if empty, assume zero for my sudoku code, else take value
         self.add_widget(self.third_cell)
 
-        self.fourth_cell = TextInput(multiline=False)
+        self.fourth_cell = FloatInput(multiline=False)
         self.add_widget(self.fourth_cell)
 
-        self.fifth_cell = TextInput(multiline=False)
+        self.fifth_cell = FloatInput(multiline=False)
         self.add_widget(self.fifth_cell)
 
-        self.sixth_cell = TextInput(multiline=False)
+        self.sixth_cell = FloatInput(multiline=False)
         self.add_widget(self.sixth_cell)
 
-        self.seventh_cell = TextInput(multiline=False)
+        self.seventh_cell = FloatInput(multiline=False)
         self.add_widget(self.seventh_cell)
 
-        self.eighth_cell = TextInput(multiline=False)
+        self.eighth_cell = FloatInput(multiline=False)
         self.add_widget(self.eighth_cell)
 
-        self.ninth_cell = TextInput(multiline=False)
+        self.ninth_cell = FloatInput(multiline=False)
         self.add_widget(self.ninth_cell)
         
-        self.tenth_cell = TextInput(multiline=False)
+        self.tenth_cell = FloatInput(multiline=False)
         self.add_widget(self.tenth_cell)
 
-        self.eleventh_cell = TextInput(multiline=False)
+        self.eleventh_cell = FloatInput(multiline=False)
         self.add_widget(self.eleventh_cell)
     
+
+class FloatInput(TextInput):                                    # Change so only allow integer instead of float
+
+    pat = re.compile('[^0-9]')
+    def insert_text(self, substring, from_undo=False):
+        pat = self.pat
+        if '.' in self.text:
+            s = re.sub(pat, '', substring)
+        else:
+            s = '.'.join([re.sub(pat, '', s) for s in substring.split('.', 1)])
+        return super(FloatInput, self).insert_text(s, from_undo=from_undo)
+
 class EpicApp(App):
     def build(self):
         self.screen_manager = ScreenManager()
