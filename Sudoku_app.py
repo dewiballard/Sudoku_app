@@ -21,7 +21,7 @@ class PuzzleSelector(GridLayout):
         super().__init__(**kwargs)
         self.cols = 2
         
-        self.add_widget(Label(text='Welcome to the ultimate sudoku solver'))
+        self.add_widget(Label(text='Sudoku solver app'))
         
         self.easy = Button(text='Easy (2x3)')
         self.add_widget(self.easy)
@@ -36,10 +36,10 @@ class PuzzleSelector(GridLayout):
         self.add_widget(self.extreme)
     
     def Grid_button(self, instance):
-        info = f'Attempting to configure your grid...'
+        info = f'Attempting to configure your grid, please enter your known values...'
         PuzzleApp.info_page.update_info(info)
         PuzzleApp.screen_manager.current = 'Info'
-        Clock.schedule_once(self.grid, 2)
+        Clock.schedule_once(self.grid, 3)
     
     def grid(self, _):        
         PuzzleApp.create_grid()
@@ -50,7 +50,7 @@ class InfoPage(GridLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cols = 1
-        self.message = Label(halign='center', valign='middle', font_size=30)
+        self.message = Label(halign='center', valign='middle', font_size=60)
         self.message.bind(width=self.update_text_width)
         self.add_widget(self.message)
     def update_info(self, message):
@@ -61,44 +61,16 @@ class InfoPage(GridLayout):
 class GridPage(GridLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.cols = 9                                           # This value to be updated for each grid
-        self.add_widget(Label(text='Please input numbers'))     # Need to make this its own row at the top (i.e. 9 cell wide)
+        self.cols = 9                                           # This values needs to be updated for each grid type
         
-        self.first_cell = FloatInput(multiline=False)           # Need to automate these so we have GridPage(n.of.cells), and it makes that number of cells
-        self.add_widget(self.first_cell)
+        for i in range(81):                                     # This values needs to be updated for each grid type
+            self.name = FloatInput(multiline=False)
+            self.add_widget(self.name)
 
-        self.second_cell = FloatInput(multiline=False)          # when these complete, if empty, assume zero for my sudoku code, else take value
-        self.add_widget(self.second_cell)
+#MAKE BOLD LINES ACROSS GRID BOUNDARIES - MAYBE NOT BOTHER IF IT'S GOING TO READ BY PICTURE
+# For next (solver part), assume 0 if empty...
 
-        self.third_cell = FloatInput(multiline=False)            
-        self.add_widget(self.third_cell)
-
-        self.fourth_cell = FloatInput(multiline=False)
-        self.add_widget(self.fourth_cell)
-
-        self.fifth_cell = FloatInput(multiline=False)
-        self.add_widget(self.fifth_cell)
-
-        self.sixth_cell = FloatInput(multiline=False)
-        self.add_widget(self.sixth_cell)
-
-        self.seventh_cell = FloatInput(multiline=False)
-        self.add_widget(self.seventh_cell)
-
-        self.eighth_cell = FloatInput(multiline=False)
-        self.add_widget(self.eighth_cell)
-
-        self.ninth_cell = FloatInput(multiline=False)
-        self.add_widget(self.ninth_cell)
-        
-        self.tenth_cell = FloatInput(multiline=False)
-        self.add_widget(self.tenth_cell)
-
-        self.eleventh_cell = FloatInput(multiline=False)
-        self.add_widget(self.eleventh_cell)
-    
-
-class FloatInput(TextInput):
+class FloatInput(TextInput):                                    # Could do with increasing font size
 
     pat = re.compile('[^0-9]')
     def insert_text(self, substring, from_undo=False):
