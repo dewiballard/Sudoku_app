@@ -64,13 +64,13 @@ class GridPage(GridLayout):
         self.cols = 9                                           # This value to be updated for each grid
         self.add_widget(Label(text='Please input numbers'))     # Need to make this its own row at the top (i.e. 9 cell wide)
         
-        self.first_cell = FloatInput(multiline=False)            # Need to automate these so we have GridPage(n.of.cells), and it makes that number of cells
+        self.first_cell = FloatInput(multiline=False)           # Need to automate these so we have GridPage(n.of.cells), and it makes that number of cells
         self.add_widget(self.first_cell)
 
-        self.second_cell = FloatInput(multiline=False)           # Need to make sure user can only put one number in
+        self.second_cell = FloatInput(multiline=False)          # when these complete, if empty, assume zero for my sudoku code, else take value
         self.add_widget(self.second_cell)
 
-        self.third_cell = FloatInput(multiline=False)            # when these complete, if empty, assume zero for my sudoku code, else take value
+        self.third_cell = FloatInput(multiline=False)            
         self.add_widget(self.third_cell)
 
         self.fourth_cell = FloatInput(multiline=False)
@@ -98,15 +98,15 @@ class GridPage(GridLayout):
         self.add_widget(self.eleventh_cell)
     
 
-class FloatInput(TextInput):                                    # Change so only allow integer instead of float
+class FloatInput(TextInput):
 
     pat = re.compile('[^0-9]')
     def insert_text(self, substring, from_undo=False):
         pat = self.pat
-        if '.' in self.text:
+        if '[^0-9]' in self.text:
             s = re.sub(pat, '', substring)
         else:
-            s = '.'.join([re.sub(pat, '', s) for s in substring.split('.', 1)])
+            s = '[^0-9]'.join([re.sub(pat, '', s) for s in substring.split('[^0-9]', 1)])
         return super(FloatInput, self).insert_text(s, from_undo=from_undo)
 
 class EpicApp(App):
