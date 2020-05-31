@@ -29,30 +29,57 @@ class PuzzleSelector(GridLayout):
         
         self.easy = Button(text='Easy (2x3)')
         self.add_widget(self.easy)
+        self.easy.bind(on_press=self.grid_size)
+        self.easy.bind(on_press=self.Grid_button)
         
         self.medium = Button(text='Medium (3x3)')
         self.add_widget(self.medium)
+        self.medium.bind(on_press=self.grid_size)
         self.medium.bind(on_press=self.Grid_button)
         
-        self.hard1 = Button(text='Hard1 (3x4)')
-        self.add_widget(self.hard1)
-        
-        self.hard2 = Button(text='Hard2 (4x3)')
-        self.add_widget(self.hard2)
+        self.hard = Button(text='Hard (3x4)')
+        self.add_widget(self.hard)
+        self.hard.bind(on_press=self.grid_size)
+        self.hard.bind(on_press=self.Grid_button)
         
         self.extreme = Button(text='Extreme (4x4)')
         self.add_widget(self.extreme)
-    
+        self.extreme.bind(on_press=self.grid_size)
+        self.extreme.bind(on_press=self.Grid_button)
+        
+        self.impossible = Button(text='Impossible (5x5)')
+        self.add_widget(self.impossible)
+        self.impossible.bind(on_press=self.grid_size)
+        self.impossible.bind(on_press=self.Grid_button)
+        
+    def grid_size(self, instance):
+        global n_cols
+        global n_cells
+        if instance.text == 'Easy (2x3)':
+            n_cols = 6
+            n_cells = 36
+        if instance.text == 'Medium (3x3)':
+            n_cols = 9
+            n_cells = 81
+        if instance.text == 'Hard (3x4)':
+            n_cols = 12
+            n_cells = 144
+        if instance.text == 'Extreme (4x4)':
+            n_cols = 16
+            n_cells = 256
+        if instance.text == 'Impossible (5x5)':
+            n_cols = 25
+            n_cells = 625
+        
     def Grid_button(self, instance):
         info = f'Attempting to configure your grid, please enter your known values...'
         PuzzleApp.info_page.update_info(info)
         PuzzleApp.screen_manager.current = 'Info'
-        Clock.schedule_once(self.grid, 3)
+        Clock.schedule_once(self.grid, 2)
     
     def grid(self, _):        
         PuzzleApp.create_grid()
         PuzzleApp.screen_manager.current = 'Grid'
-        
 
 class InfoPage(GridLayout):
     def __init__(self, **kwargs):
@@ -71,20 +98,20 @@ class InfoPage(GridLayout):
 class GridPage(GridLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        number_of_columns = 9                                                   # This values needs to be updated for each grid type
-        number_of_cells = 81                                                    # This values needs to be updated for each grid type
+        number_of_columns = n_cols
+        number_of_cells = n_cells
         self.cols = number_of_columns
         
         for i in range(number_of_cells):
             self.name = FloatInput(multiline=False, font_size=100)
             self.add_widget(self.name)
 
-        self.image_it = Button(text='Take image')                                 # For next (solver part), assume 0 if empty...
+        self.image_it = Button(text='Take image')                               # For next (solver part), assume 0 if empty...
         self.add_widget(self.image_it)
         self.image_it.bind(on_press=self.Camera_button)        
         
         for i in range(number_of_columns-2):
-            self.name = Button(text='')
+            self.name = Label(text='')
             self.add_widget(self.name)
         
         self.solve_it = Button(text='Solve it')                                 # For next (solver part), assume 0 if empty...
@@ -142,7 +169,6 @@ class CameraPage(BoxLayout):
         cam = Camera(play=True)
         self.add_widget(self.cam)
         #camera.export_to_png("IMG_{}.png".format(timestr))                     # will need to export png for reader to chop
-
 
 class MessagePage(GridLayout):
     def __init__(self, **kwargs):
