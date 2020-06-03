@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+k# -*- coding: utf-8 -*-
 """
 Created on Thu May 28 12:42:31 2020
 
@@ -7,7 +7,6 @@ Created on Thu May 28 12:42:31 2020
 
 from grids import getGrid as gg
 import numpy as np
-
 
 def convert_nums():
     global grid
@@ -28,7 +27,6 @@ def convert_nums():
             elif grid[y][x] == 16:
                 grid[y][x] = 0
                 
-
 def get_grid_dim():
     global grid
     y = len(grid)
@@ -70,7 +68,6 @@ def possible_move(y,x,n):
                 return False  
     return True
 
-
 def solve():
     global grid
     global sFound
@@ -89,7 +86,6 @@ def solve():
                 return 
     sFound = True
 
-    
 grid = gg(3)
 sFound = False
 dim = get_grid_dim()

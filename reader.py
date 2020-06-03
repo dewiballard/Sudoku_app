@@ -13,7 +13,7 @@ import pytesseract
 pytesseract.pytesseract.tesseract_cmd = r"C:\\Users\pm11lms\AppData\Local\Tesseract-OCR\tesseract.exe"
 
 start = time.clock()
-im = cv2.resize(cv2.imread('./test9x9.png'), (1080, 1080))
+im = cv2.resize(cv2.imread('puzzle_img.png'), (1080, 1080))
 out = np.zeros((9, 9), dtype=np.uint8)
 
 for x in range(9):

@@ -5,7 +5,6 @@ Created on Wed May 27 17:13:06 2020
 
 @author: dewiballard
 """
-import kivy
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.gridlayout import GridLayout
@@ -13,12 +12,11 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.clock import Clock
-from kivy.uix.camera import Camera
+from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
-#import image_slicer #recommend for slicing image, command is then image_slicer.slice('cake.jpg', 4)
-
+import image_slicer
+import time
 import re
-import os
 
 class PuzzleSelector(GridLayout):
     def __init__(self, **kwargs):
@@ -102,13 +100,17 @@ class GridPage(GridLayout):
         number_of_cells = n_cells
         self.cols = number_of_columns
         
+        global my_dict
+        my_dict = {}
         for i in range(number_of_cells):
-            self.name = FloatInput(multiline=False, font_size=100)
-            self.add_widget(self.name)
-
-        self.image_it = Button(text='Take image')                               # For next (solver part), assume 0 if empty...
+            self.cells = FloatInput(multiline=False, font_size=35)            #potentially ID this
+            self.add_widget(self.cells)
+            a = str('cell'+str(i+1))
+            my_dict[a] = self.cells
+   
+        self.image_it = Button(text='Take image')
         self.add_widget(self.image_it)
-        self.image_it.bind(on_press=self.Camera_button)        
+        self.image_it.bind(on_press=self.Camera_button) 
         
         for i in range(number_of_columns-2):
             self.name = Label(text='')
@@ -117,7 +119,7 @@ class GridPage(GridLayout):
         self.solve_it = Button(text='Solve it')                                 # For next (solver part), assume 0 if empty...
         self.add_widget(self.solve_it)
         self.solve_it.bind(on_press=self.Results_button)
-    
+           
     def Camera_button(self, instance):
         notice = f'Opening camera'
         PuzzleApp.notice_page.update_info(notice)
@@ -132,6 +134,14 @@ class GridPage(GridLayout):
         message = f'Solving grid, please wait...'
         PuzzleApp.message_page.update_info(message)
         PuzzleApp.screen_manager.current = 'Message'
+        global my_dict2
+        my_dict2 = {}
+        for item in my_dict:
+            if my_dict[item].text == '':
+                my_dict2[item] = 0
+            else:
+                my_dict2[item] = my_dict[item].text
+        print(my_dict2)
         Clock.schedule_once(self.results, 3)
         
     def results(self, _):        
@@ -162,13 +172,36 @@ class NoticePage(GridLayout):
     def update_text_width(self, *_):
         self.message.text_size = (self.message.width*0.9, None)
 
+Builder.load_string('''
+<CameraPage>:
+    orientation: 'vertical'
+    Camera:
+        size_hint: 1, 1
+        id: camera
+        resolution: (1280, 720)
+        keep_ratio: False
+        allow_stretch: True
+        pos_hint: {"center_x":0.5, "center_y":0.5}
+        size_hint_y: 0.65
+        size_hint_x: 1
+        play: True
+    ToggleButton:
+        text: 'Take / Retake'
+        on_press: camera.play = not camera.play
+        size_hint_y: None
+        height: '48dp'
+    Button:
+        text: 'Use image'
+        size_hint_y: None
+        height: '48dp'
+        on_press: root.capture()
+''')                                                                            #on_press: go to grid page, with the numbers read filled in...
+    
 class CameraPage(BoxLayout):
-    #def build(self):
-    #    return Camera(play=True, resolution=[256,256])                         # get the camera to work
-    def build(self):
-        cam = Camera(play=True)
-        self.add_widget(self.cam)
-        #camera.export_to_png("IMG_{}.png".format(timestr))                     # will need to export png for reader to chop
+    def capture(self):
+        camera = self.ids['camera']
+        camera.export_to_png("puzzle_img.png")
+        image_slicer.slice('puzzle_img.png', n_cells)
 
 class MessagePage(GridLayout):
     def __init__(self, **kwargs):
@@ -187,14 +220,14 @@ class MessagePage(GridLayout):
 class ResultsPage(GridLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        number_of_columns = 9                                                   # This values needs to be updated for each grid type
-        number_of_cells = 81                                                    # This values needs to be updated for each grid type
-        self.cols = number_of_columns                           
+        number_of_columns = n_cols
+        number_of_cells = n_cells
+        self.cols = number_of_columns
         
         for i in range(number_of_cells):
-            self.name = Button(text='input')
+            self.name = Label(text='input', font_size = 35)
             self.add_widget(self.name)
-            
+        
 class SudokuSolverApp(App):
     def build(self):
         self.screen_manager = ScreenManager()
