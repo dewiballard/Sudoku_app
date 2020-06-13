@@ -74,6 +74,9 @@ class PuzzleSelector(GridLayout):
             n_cols = 25
             n_cells = 625
         
+        global listed_out
+        listed_out = (np.zeros((n_cols, n_cols), dtype=np.uint8)).flatten()
+        
     def Grid_button(self, instance):
         info = f'Attempting to configure your grid, please enter your known values...'
         PuzzleApp.info_page.update_info(info)
@@ -112,12 +115,7 @@ class GridPage(GridLayout):
             self.add_widget(self.cells)
             a = str('cell'+str(i+1))
             my_dict[a] = self.cells
-		# ignore this - will take me 2 minutes to get the 'out' from reader into the grid
-            #if i == 5:
-            #    self.cells = FloatInput(text = 'hi', multiline=False, font_size=35)
-            #    self.add_widget(self.cells)
-		#https://www.youtube.com/watch?v=8I2fMqrruwc&list=PLQVvvaa0QuDfwnDTZWw8H3hN_VRQfq8rF
-   
+        
         self.image_it = Button(text='Take image', size_hint = (1, 2))
         self.add_widget(self.image_it)
         self.image_it.bind(on_press=self.Camera_button) 
@@ -129,7 +127,70 @@ class GridPage(GridLayout):
         self.solve_it = Button(text='Solve it', size_hint = (1, 2))
         self.add_widget(self.solve_it)
         self.solve_it.bind(on_press=self.Results_button)
-           
+        
+    def Camera_button(self, instance):
+        notice = f'Opening camera'
+        PuzzleApp.notice_page.update_info(notice)
+        PuzzleApp.screen_manager.current = 'Notice'
+        Clock.schedule_once(self.camera, 1.5)
+        
+    def camera(self, _):        
+        PuzzleApp.camera_window()
+        PuzzleApp.screen_manager.current = 'Camera'
+        
+    def Results_button(self, instance):
+        message = f'Solving grid, please wait...'
+        PuzzleApp.message_page.update_info(message)
+        PuzzleApp.screen_manager.current = 'Message'
+        global my_dict2
+        my_dict2 = {}
+        for item in my_dict:
+            if my_dict[item].text == '':
+                my_dict2[item] = 0
+            else:
+                my_dict2[item] = my_dict[item].text
+        print(my_dict2)
+        Clock.schedule_once(self.results, 3)
+        
+    def results(self, _):        
+        PuzzleApp.results_grid()
+        PuzzleApp.screen_manager.current = 'Results'
+
+
+class GridPageTwo(GridLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        number_of_columns = n_cols
+        number_of_cells = n_cells
+        self.cols = number_of_columns
+        
+        global my_dict
+        my_dict = {}
+        for i in range(number_of_cells):
+            print(listed_out[i])
+            if int(listed_out[i]) != 0:
+                self.cells = FloatInput(text = str(listed_out[i]), multiline=False, font_size=35)
+                self.add_widget(self.cells)
+                a = str('cell'+str(i+1))
+                my_dict[a] = self.cells
+            else:
+                self.cells = FloatInput(multiline=False, font_size=35)
+                self.add_widget(self.cells)
+                a = str('cell'+str(i+1))
+                my_dict[a] = self.cells
+
+        self.image_it = Button(text='Take image', size_hint = (1, 2))
+        self.add_widget(self.image_it)
+        self.image_it.bind(on_press=self.Camera_button) 
+        
+        for i in range(number_of_columns-2):
+            self.name = Label(text='')
+            self.add_widget(self.name)
+        
+        self.solve_it = Button(text='Solve it', size_hint = (1, 2))
+        self.add_widget(self.solve_it)
+        self.solve_it.bind(on_press=self.Results_button)
+        
     def Camera_button(self, instance):
         notice = f'Opening camera'
         PuzzleApp.notice_page.update_info(notice)
@@ -232,7 +293,6 @@ class CornerPage(FloatLayout):
         self.use_img.pos = (size[0]*0.8, size[1]*0.05)
         self.add_widget(self.use_img)
         self.use_img.bind(on_press=self.read_image)
-        self.use_img.bind(on_press=self.grid)
         self.topleft = Image(source ='red_circle.png', size_hint = (0.02, 0.02))
         self.topleft.pos = (size[0]*0.2, size[1]*0.8)
         self.add_widget(self.topleft)
@@ -282,23 +342,25 @@ class CornerPage(FloatLayout):
     
     def unwarp(self, img, src, dst, testing):
         h, w = img.shape[:2]
-        # use cv2.getPerspectiveTransform() to get M, the transform matrix, and Minv, the inverse
+        # use cv2.getPerspectiveTransform() to get M, the transform matrix
         M = cv2.getPerspectiveTransform(src, dst)
         # use cv2.warpPerspective() to warp image to correct angle
         warped = cv2.warpPerspective(img, M, (w, h), flags=cv2.INTER_LINEAR)
         slicer = int(1080/n_cols)
         margin = int((1080/n_cols)*0.083)
-        global out
         out = np.zeros((n_cols, n_cols), dtype=np.uint8)
         for x in range(n_cols):
             for y in range(n_cols):
                 num = pytesseract.image_to_string(warped[margin + x*slicer:(x+1)*slicer - margin, margin + y*slicer:(y+1)*slicer - margin], lang ='eng', config='--psm 8 --oem 1 -c tessedit_char_whitelist=0123456789')
                 if num:
                     out[x, y] = num
+        print(out)
+        global listed_out; listed_out = list(out.flatten())
+        Clock.schedule_once(self.grid_two, 0.5)
 
-    def grid(self, _):        
-        PuzzleApp.create_grid()
-        PuzzleApp.screen_manager.current = 'Grid'
+    def grid_two(self, _):        
+        PuzzleApp.create_grid_two()
+        PuzzleApp.screen_manager.current = 'GridTwo'
         
 class MessagePage(GridLayout):
     def __init__(self, **kwargs):
@@ -355,6 +417,12 @@ class SudokuSolverApp(App):
         self.grid_page = GridPage()
         screen = Screen(name='Grid')
         screen.add_widget(self.grid_page)
+        self.screen_manager.add_widget(screen) 
+    
+    def create_grid_two(self):
+        self.grid_page_two = GridPageTwo()
+        screen = Screen(name='GridTwo')
+        screen.add_widget(self.grid_page_two)
         self.screen_manager.add_widget(screen) 
 
     def camera_window(self):
