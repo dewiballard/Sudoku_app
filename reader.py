@@ -1,26 +1,27 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat May 30 11:49:24 2020
+Created on Sat Jun  6 20:52:28 2020
 
-@author: pm11lms
+@author: dewiballard
 """
-
 
 import cv2
 import numpy as np
-import time 
 import pytesseract
-pytesseract.pytesseract.tesseract_cmd = r"C:\\Users\pm11lms\AppData\Local\Tesseract-OCR\tesseract.exe"
 
-start = time.clock()
-im = cv2.resize(cv2.imread('puzzle_img.png'), (1080, 1080))
-out = np.zeros((9, 9), dtype=np.uint8)
-
+img = cv2.imread('puzzle_img.png')
+img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+img_clean = cv2.GaussianBlur(img_gray, (5, 5), 0)
+img_resize = cv2.resize(img_clean, (1080, 1080))
+ret, thresh = cv2.threshold(img_resize, 5, 255, cv2.THRESH_OTSU)
+cv2.imwrite("./output_image.png", thresh)
+n_cols=9
+slicer = int(1080/n_cols)
+margin = 10
+out = np.zeros((n_cols, n_cols), dtype=np.uint8)
 for x in range(9):
     for y in range(9):
-        num = pytesseract.image_to_string(im[10 + x*120:(x+1)*120 - 10, 10 + y*120:(y+1)*120 - 10, :], lang ='eng', config='--psm 8 --oem 1 -c tessedit_char_whitelist=0123456789')
+        num = pytesseract.image_to_string(thresh[margin + x*slicer:(x+1)*slicer - margin, margin + y*slicer:(y+1)*slicer - margin], lang ='eng', config='--psm 8 --oem 1 -c tessedit_char_whitelist=0123456789')
         if num:
             out[x, y] = num
-            
-end = time.clock() - start
-print("Time taken to solve: " + str(end))
+print(out)

@@ -8,15 +8,20 @@ Created on Wed May 27 17:13:06 2020
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
-import image_slicer
-import time
+from kivy.uix.image import Image
+from kivy.core.window import Window
 import re
+import cv2
+import os
+import numpy as np
+import pytesseract
 
 class PuzzleSelector(GridLayout):
     def __init__(self, **kwargs):
@@ -103,12 +108,17 @@ class GridPage(GridLayout):
         global my_dict
         my_dict = {}
         for i in range(number_of_cells):
-            self.cells = FloatInput(multiline=False, font_size=35)            #potentially ID this
+            self.cells = FloatInput(multiline=False, font_size=35)
             self.add_widget(self.cells)
             a = str('cell'+str(i+1))
             my_dict[a] = self.cells
+		# ignore this - will take me 2 minutes to get the 'out' from reader into the grid
+            #if i == 5:
+            #    self.cells = FloatInput(text = 'hi', multiline=False, font_size=35)
+            #    self.add_widget(self.cells)
+		#https://www.youtube.com/watch?v=8I2fMqrruwc&list=PLQVvvaa0QuDfwnDTZWw8H3hN_VRQfq8rF
    
-        self.image_it = Button(text='Take image')
+        self.image_it = Button(text='Take image', size_hint = (1, 2))
         self.add_widget(self.image_it)
         self.image_it.bind(on_press=self.Camera_button) 
         
@@ -116,7 +126,7 @@ class GridPage(GridLayout):
             self.name = Label(text='')
             self.add_widget(self.name)
         
-        self.solve_it = Button(text='Solve it')                                 # For next (solver part), assume 0 if empty...
+        self.solve_it = Button(text='Solve it', size_hint = (1, 2))
         self.add_widget(self.solve_it)
         self.solve_it.bind(on_press=self.Results_button)
            
@@ -201,8 +211,95 @@ class CameraPage(BoxLayout):
     def capture(self):
         camera = self.ids['camera']
         camera.export_to_png("puzzle_img.png")
-        image_slicer.slice('puzzle_img.png', n_cells)
+        img = cv2.imread("puzzle_img.png")
+        os.remove("puzzle_img.png")
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img_clean = cv2.GaussianBlur(img_gray, (5, 5), 0)
+        img_resize = cv2.resize(img_clean, (1080, 1080))
+        global thresh
+        ret, thresh = cv2.threshold(img_resize, 5, 255, cv2.THRESH_OTSU)
+        cv2.imwrite("./output_image.png", thresh)
+        PuzzleApp.corner_window()
+        PuzzleApp.screen_manager.current = 'Corner Selector'
 
+class CornerPage(FloatLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        size = Window.size
+        self.img = Image(source ='output_image.png', keep_ratio=False, allow_stretch=True) 
+        self.add_widget(self.img)
+        self.use_img = Button(text='Use image', size_hint = (0.2, 0.1))
+        self.use_img.pos = (size[0]*0.8, size[1]*0.05)
+        self.add_widget(self.use_img)
+        self.use_img.bind(on_press=self.read_image)
+        self.use_img.bind(on_press=self.grid)
+        self.topleft = Image(source ='red_circle.png', size_hint = (0.02, 0.02))
+        self.topleft.pos = (size[0]*0.2, size[1]*0.8)
+        self.add_widget(self.topleft)
+        self.topright = Image(source ='red_circle.png', size_hint = (0.02, 0.02)) 
+        self.topright.pos = (size[0]*0.8, size[1]*0.8)
+        self.add_widget(self.topright)
+        self.bottomleft = Image(source ='red_circle.png', size_hint = (0.02, 0.02)) 
+        self.bottomleft.pos = (size[0]*0.2, size[1]*0.2)
+        self.add_widget(self.bottomleft)
+        self.bottomright = Image(source ='red_circle.png', size_hint = (0.02, 0.02)) 
+        self.bottomright.pos = (size[0]*0.8, size[1]*0.2)
+        self.add_widget(self.bottomright)
+
+    def on_touch_move(self,touch):
+        t_x,t_y = touch.pos
+        tl_x,tl_y = self.topleft.pos
+        tr_x,tr_y = self.topright.pos
+        bl_x,bl_y = self.bottomleft.pos
+        br_x,br_y = self.bottomright.pos
+        if tl_x-100 < t_x < tl_x+100 and tl_y-100 < t_y < tl_y+100:
+            self.topleft.pos = (t_x, t_y)
+        if tr_x-100 < t_x < tr_x+100 and tr_y-100 < t_y < tr_y+100:
+            self.topright.pos = (t_x, t_y)
+        if bl_x-100 < t_x < bl_x+100 and bl_y-100 < t_y < bl_y+100:
+            self.bottomleft.pos = (t_x, t_y)
+        if br_x-100 < t_x < br_x+100 and br_y-100 < t_y < br_y+100:
+            self.bottomright.pos = (t_x, t_y)
+            
+    def read_image(self, instance):
+        size = Window.size
+        top_left_coords = 1080*self.topleft.pos[0]/size[0], 1080 - 1080*self.topleft.pos[1]/size[1]
+        top_right_coords = 1080*self.topright.pos[0]/size[0], 1080 - 1080*self.topright.pos[1]/size[1]
+        bottom_left_coords = 1080*self.bottomleft.pos[0]/size[0], 1080 - 1080*self.bottomleft.pos[1]/size[1]      
+        bottom_right_coords = 1080*self.bottomright.pos[0]/size[0], 1080 - 1080*self.bottomright.pos[1]/size[1]
+        
+        src = np.float32([top_left_coords,
+                  top_right_coords,
+                  bottom_left_coords,
+                  bottom_right_coords])
+
+        dst = np.float32([(0, 0),
+                  (1080, 0),
+                  (0, 1080),
+                  (1080, 1080)])
+    
+        self.unwarp(thresh, src, dst, True)
+    
+    def unwarp(self, img, src, dst, testing):
+        h, w = img.shape[:2]
+        # use cv2.getPerspectiveTransform() to get M, the transform matrix, and Minv, the inverse
+        M = cv2.getPerspectiveTransform(src, dst)
+        # use cv2.warpPerspective() to warp image to correct angle
+        warped = cv2.warpPerspective(img, M, (w, h), flags=cv2.INTER_LINEAR)
+        slicer = int(1080/n_cols)
+        margin = int((1080/n_cols)*0.083)
+        global out
+        out = np.zeros((n_cols, n_cols), dtype=np.uint8)
+        for x in range(n_cols):
+            for y in range(n_cols):
+                num = pytesseract.image_to_string(warped[margin + x*slicer:(x+1)*slicer - margin, margin + y*slicer:(y+1)*slicer - margin], lang ='eng', config='--psm 8 --oem 1 -c tessedit_char_whitelist=0123456789')
+                if num:
+                    out[x, y] = num
+
+    def grid(self, _):        
+        PuzzleApp.create_grid()
+        PuzzleApp.screen_manager.current = 'Grid'
+        
 class MessagePage(GridLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -264,6 +361,12 @@ class SudokuSolverApp(App):
         self.camera_page = CameraPage()
         screen = Screen(name='Camera')
         screen.add_widget(self.camera_page)
+        self.screen_manager.add_widget(screen) 
+        
+    def corner_window(self):
+        self.corner_page = CornerPage()
+        screen = Screen(name='Corner Selector')
+        screen.add_widget(self.corner_page)
         self.screen_manager.add_widget(screen) 
         
     def results_grid(self):
